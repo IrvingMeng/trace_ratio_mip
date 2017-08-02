@@ -2,12 +2,12 @@
 # Experiment for ORL dataset
 # ----------------------------------------------------------------------
 # This code will include these parts: 
-# [TODO] Compare the select  features when m=100, shown in a picture
-# [TODO] Report how many features and constraints are added
+# [DONE] Compare the select  features when m=100, shown in a picture
+# [DONE] Report how many features and constraints are added
 # [TODO] With the increasing of m, report
-#           1. the running time v.s. without using the monotonic property
-#           2. Running time v.s. without using our framework at all
-#           3. number of eliminated features
+#          [] 1. the running time v.s. without using the monotonic property
+#          [] 2. Running time v.s. without using our framework at all
+#          [] 3. number of eliminated features
 # ----------------------------------------------------------------------
 import numpy as np
 import heapq
@@ -32,9 +32,7 @@ dig_B = _data['dig_B']
 dig_E = _data['dig_E']
 cons_var, cons_coef, cons_rhs, ignore_list =  data_orl_add_constraints(0.98)
 
-# ----------
-print len(cons_rhs) # of new constraints
-print len(ignore_list) # of involved featues
+
 
 
 # ------------------------------
@@ -79,26 +77,71 @@ features_mio = np.where(np.array(sol.get_values(var_p))>=0.5)[0]
 # [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 163, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 225, 279, 280, 281, 282, 283, 284, 286, 287, 289, 346]
 
 
-"""
-m_list = xrange(10,510,20)  # 10 20 ... 500
+# --------------------------------------------------
+# This part is used for 
+cons_var, cons_coef, cons_rhs, ignore_list =  data_orl_add_constraints(0.98)
+print len(cons_rhs) # of new constraints
+print len(ignore_list) # of involved featues
+m_list = range(10,110,10) + range(110,210,20) +  range(210,510,50)  +range(510, 1000, 100) + [1000]# 27 values to 1000
+
+
+num_eli = []
+run_time = []
+mio_monot = 100
 for m in m_list:
     # nie approach
+    print "HERE"
+    print m
+    print 
     features_nie, nie_ratio = nie_alg(dig_B,dig_E, m)
-    
     # the mio approach
     U_m = min([max(dig_B/dig_E), nie_ratio, sum(heapq.nlargest(m, dig_B))/sum(heapq.nsmallest(m, dig_E)), mio_monot])
     L_m = max([min(dig_B/dig_E), sum(heapq.nsmallest(m, dig_B))/sum(heapq.nlargest(m, dig_E))])
     c = cplex.Cplex()
     setupproblem_basic(c, m, d, dig_B, dig_E, U_m, L_m, cons_var, cons_coef, cons_rhs)
-    print 'eliminate '+ str(eliminate_features(c, d, dig_B, dig_E, U_m, ignore_list)) + '  variables'
+    num_eli.append(eliminate_features(c, d, dig_B, dig_E, U_m, ignore_list))
     time = c.get_time()
     c.solve()
     run_time.append(c.get_time() - time)
     sol = c.solution
     mio_monot = sol.get_objective_value()
 
-    features_mio = np.where(np.array(sol.get_values(var_p))>=0.5)[0]
 
 
+# without the monotonic property
+features_nie, nie_ratio = nie_alg(dig_B,dig_E, 1000)
+# the mio approach
+U_m = min([max(dig_B/dig_E), nie_ratio, sum(heapq.nlargest(m, dig_B))/sum(heapq.nsmallest(m, dig_E))])
+L_m = max([min(dig_B/dig_E), sum(heapq.nsmallest(m, dig_B))/sum(heapq.nlargest(m, dig_E))])
+c = cplex.Cplex()
+time = c.get_time()
+setupproblem_basic(c, m, d, dig_B, dig_E, U_m, L_m, cons_var, cons_coef, cons_rhs)
+num_eli.append(eliminate_features(c, d, dig_B, dig_E, U_m, ignore_list))
+c.solve()
+run_time.append(c.get_time() - time)
+
+
+# doesn't use the elimination
+c = cplex.Cplex()
+time = c.get_time()
+setupproblem_basic(c, m, d, dig_B, dig_E, U_m, L_m, cons_var, cons_coef, cons_rhs)
+c.solve()
+run_time.append(c.get_time() - time)
+
+np.savez('./data/orl_face/orl_data_mon_time', m_list = m_list, num_eli = num_eli, run_time = run_time)
+
+# the saved data 1:27 of num_eli, run_time correspond to m_list, 28 of num_eli, run_time uses no monotonic property, 29 of run_time doesn't eliminate the variables
+
+# ----------
+# plot the results
 import seaborn as sns    
-"""
+plt.rc('text', usetex=True)
+plt.plot(m_list, num_eli[0:-1],'bo-')
+plt.xlabel(r'\bf Target number of features $\mathbf{m}$',fontsize = 15)
+plt.ylabel(r'\bf Number of eliminated variables',fontsize = 15)
+plt.show()
+
+plt.plot(m_list, run_time[0:-2])
+plt.xlabel(r'\bf Target number of features $\mathbf{m}$',fontsize = 15)
+plt.ylabel(r'\bf Running time (s)',fontsize = 15)
+plt.show()
