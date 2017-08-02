@@ -2,7 +2,7 @@
 # Experiment for ORL dataset
 # ----------------------------------------------------------------------
 # This code will include these parts: 
-# [DONE] 2. Use 1NN to give the test accuracy, run 20 times
+# [DONE] Use 1NN to give the test accuracy, run 20 times
 #             a. naive approach
 #             b. subset approach
 #             c. MIO approach
@@ -109,4 +109,29 @@ np.savez('./data/orl_face/exp_orl_error', error_naive = error_naive, error_nie =
 # for a specific process, show how the elimination process works, how many new constraints and features are involved
 
 
+a = np.load('./data/orl_face/exp_orl_error.npz')
+error_naive = a["error_naive"]
+error_nie = a["error_nie"]
+error_mio = a["error_mio"]
+run_time = a["run_time"]
 
+plt.rc('text', usetex=True)
+plt.plot(m_list,np.mean(1 - np.matrix(error_naive)/200.0,axis=0).tolist()[0],'g', linewidth = 2.5)
+plt.plot(m_list,np.mean(1 - np.matrix(error_nie)/200.0,axis=0).tolist()[0], 'r-.',linewidth = 3)
+plt.plot(m_list,np.mean(1 - np.matrix(error_mio)/200.0,axis=0).tolist()[0],'b--',linewidth = 3)
+plt.xlabel(r'\bf number of features',fontsize = 15)
+plt.ylabel(r'\bf Accuracy',fontsize = 15)
+labels = (r'\bf Fisher Score', r'\bf Trace Ratio(FS)',r'\bf Our approach')
+legend = plt.legend(labels, loc=0,fontsize = 12)
+plt.ylim([0.55,0.95])
+plt.show()
+
+
+print np.mean(1 - np.matrix(error_naive)/200.0,axis=0)
+print np.std(1 - np.matrix(error_naive)/200.0,axis=0)
+
+print np.mean(1 - np.matrix(error_nie)/200.0,axis=0)
+print np.std(1 - np.matrix(error_nie)/200.0,axis=0)
+
+print np.mean(1 - np.matrix(error_mio)/200.0,axis=0)
+print np.std(1 - np.matrix(error_mio)/200.0,axis=0)
