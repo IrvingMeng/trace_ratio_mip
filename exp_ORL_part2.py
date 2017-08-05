@@ -195,6 +195,24 @@ for m in m_list:
 # print num_D_eli
 # print time_D_elimination
 # print time_D_no_elimination
+# ----------
+# plot the results
+import seaborn as sns    
+plt.rc('text', usetex=True)
+plt.plot(m_list,time_D_no_elimination, 'r-o',linewidth = 3)
+plt.plot(m_list,time_D_elimination,'b-*',linewidth = 3)
+plt.xlabel(r'\bf number of features',fontsize = 15)
+plt.ylabel(r'\bf Running time',fontsize = 15)
+labels = (r'\bf without elinimation', r'\bf with elimination')
+legend = plt.legend(labels, loc=0,fontsize = 12)
+plt.xlim([400, 3000])
+plt.show()
 
+
+plt.plot(m_list, num_D_eli,'bo-')
+plt.xlabel(r'\bf Target number of features $\mathbf{m}$',fontsize = 15)
+plt.ylabel(r'\bf Number of eliminated variables',fontsize = 15)
+plt.xlim([400, 3000])
+plt.show()
 
 np.savez('./data/orl_face/orl_no_elimination_or_not', m_list = m_list, num_D_eli = num_D_eli, time_D_elimination = time_D_elimination, time_D_no_elimination = time_D_no_elimination)
