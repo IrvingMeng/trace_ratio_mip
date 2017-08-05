@@ -2,12 +2,14 @@
 # Experiment for ORL dataset
 # ----------------------------------------------------------------------
 # This code will include these parts: 
-# [DONE] Compare the select  features when m=100, shown in a picture
-# [DONE] Report how many features and constraints are added
-# [TODO] With the increasing of m, report
+# A. [DONE] Compare the select  features when m=100, shown in a picture
+# B. [DONE] Report how many features and constraints are added
+# C. [DONE] With the increasing of m, report
 #          [] 1. the running time v.s. without using the monotonic property
 #          [] 2. Running time v.s. without using our framework at all
 #          [] 3. number of eliminated features
+# D. [TODO] Compare the running time of whether use the elimination process
+#          [] With respect of m
 # ----------------------------------------------------------------------
 import numpy as np
 import heapq
@@ -36,6 +38,7 @@ cons_var, cons_coef, cons_rhs, ignore_list =  data_orl_add_constraints(0.98)
 
 
 # ------------------------------
+# A
 # this part produce a image to show the selected features
 # can consider change threhsold
 m = 200
@@ -78,7 +81,7 @@ features_mio = np.where(np.array(sol.get_values(var_p))>=0.5)[0]
 
 
 # --------------------------------------------------
-# This part is used for 
+# This part is used for B, C
 cons_var, cons_coef, cons_rhs, ignore_list =  data_orl_add_constraints(0.98)
 print len(cons_rhs) # of new constraints
 print len(ignore_list) # of involved featues
@@ -109,7 +112,8 @@ for m in m_list:
 
 
 # without the monotonic property
-features_nie, nie_ratio = nie_alg(dig_B,dig_E, 1000)
+m = 1000
+features_nie, nie_ratio = nie_alg(dig_B,dig_E, m)
 # the mio approach
 U_m = min([max(dig_B/dig_E), nie_ratio, sum(heapq.nlargest(m, dig_B))/sum(heapq.nsmallest(m, dig_E))])
 L_m = max([min(dig_B/dig_E), sum(heapq.nsmallest(m, dig_B))/sum(heapq.nlargest(m, dig_E))])
@@ -145,3 +149,52 @@ plt.plot(m_list, run_time[0:-2])
 plt.xlabel(r'\bf Target number of features $\mathbf{m}$',fontsize = 15)
 plt.ylabel(r'\bf Running time (s)',fontsize = 15)
 plt.show()
+
+
+# ------------------------------
+# Part D
+print "Let's go!'"
+m_list = range(400,3050,50)
+
+num_D_eli = []  # D here represents part D
+time_D_elimination = []
+time_D_no_elimination = []
+mio_monot = 3.4 # m = 200
+for m in m_list:
+    features_nie, nie_ratio = nie_alg(dig_B,dig_E, m)
+    U_m = min([max(dig_B/dig_E), nie_ratio, sum(heapq.nlargest(m, dig_B))/sum(heapq.nsmallest(m, dig_E)), mio_monot])
+    L_m = max([min(dig_B/dig_E), sum(heapq.nsmallest(m, dig_B))/sum(heapq.nlargest(m, dig_E))])
+
+
+    c = cplex.Cplex()
+    c.set_results_stream(None) # stop printing 
+    time = c.get_time()
+    setupproblem_basic(c, m, d, dig_B, dig_E, U_m, L_m, cons_var, cons_coef, cons_rhs)
+    num_D_eli.append(eliminate_features(c, d, dig_B, dig_E, U_m, ignore_list))
+    c.solve()
+    time_D_elimination.append(c.get_time() - time)
+
+    sol = c.solution
+    mio_monot = sol.get_objective_value()
+    
+    print "Eliminate  " + str(num_D_eli[-1]) + "  out of " + str(m) + " features"
+    print "         running time: " + str(time_D_elimination[-1])
+    
+    c = cplex.Cplex()
+    c.set_results_stream(None) # stop printing 
+    time = c.get_time()
+    setupproblem_basic(c, m, d, dig_B, dig_E, U_m, L_m, cons_var, cons_coef, cons_rhs)
+    c.solve()
+    time_D_no_elimination.append(c.get_time() - time)
+
+    print "         running time(no elimination): " + str(time_D_no_elimination[-1])
+
+
+
+# print m_list
+# print num_D_eli
+# print time_D_elimination
+# print time_D_no_elimination
+
+
+np.savez('./data/orl_face/orl_no_elimination_or_not', m_list = m_list, num_D_eli = num_D_eli, time_D_elimination = time_D_elimination, time_D_no_elimination = time_D_no_elimination)
